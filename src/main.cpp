@@ -44,13 +44,13 @@ void rainbow(uint8_t wait)
 }
 
 BLYNK_WRITE(V4) // set color for RGB_zebra
-{
-  int shift = param.asInt();
-  for (int i = 0; i < strip.numPixels(); i++)
-  {
-    strip.setPixelColor(i,Wheel(shift & 255));
-    //strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + shift) & 255));
-  }
+{  
+  red = param[0].asInt();
+  green = param[1].asInt();
+  blue = param[2].asInt();
+
+  for(int i =0; i < strip.numPixels(); i++)
+    strip.setPixelColor(i,red,green,blue);
   strip.show();
 }
 
@@ -87,11 +87,15 @@ BLYNK_WRITE(V2)
   strip.show();          
 }
 
+BLYNK_WRITE(V5){
+
+}
+
 void setup()
 {
   Serial.begin(9600);
 
-  Blynk.begin(auth, ssid, pass, IPAddress(192,168,55,169), 8080);
+  Blynk.begin(auth, ssid, pass, IPAddress(ip_address[0],ip_address[1],ip_address[2],ip_address[3]), 8080);
 
   strip.begin();
   strip.show();
