@@ -1,41 +1,36 @@
 #include <Arduino.h>
 
 #include <Wire.h>
-#include <SPI.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
-//#include <Adafruit_BMP280.h>
-
-#define SEA_LEVEL_PRESSURE_HPA (1013.25) // TO ADJUST
-
-Adafruit_BME280 bme;
-
-int i2c_bme_address = 0x76;
-
-#define BLYNK_PRINT Serial
 
 #include <Adafruit_NeoPixel.h>
+
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
 
 #include "settings.hpp"
 
-#define PIN D7
-#define NUM_OF_LED 250
+#define BLYNK_PRINT Serial
+#define PIN_LED_DATA D7
 
-int red, green, blue, first_led, last_led = 0;
+Adafruit_BME280 bme;
+uint8_t i2c_bme_address = 0x76;
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_OF_LED, PIN, NEO_GRB + NEO_KHZ800);
+uint16_t number_of_LEDs  = 250;
+uint8_t red, green, blue, first_led, last_led = 0;
 
-uint32_t Wheel(byte WheelPos) {
-  if (WheelPos < 85) {
-    return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
-  } else if (WheelPos < 170) {
-    WheelPos -= 85;
-    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(number_of_LEDs, PIN_LED_DATA, NEO_GRB + NEO_KHZ800);
+
+uint32_t wheel(byte wheelPos) {
+  if (wheelPos < 85) {
+    return strip.Color(wheelPos * 3, 255 - wheelPos * 3, 0);
+  } else if (wheelPos < 170) {
+    wheelPos -= 85;
+    return strip.Color(255 - wheelPos * 3, 0, wheelPos * 3);
   } else {
-    WheelPos -= 170;
-    return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+    wheelPos -= 170;
+    return strip.Color(0, wheelPos * 3, 255 - wheelPos * 3);
   }
 }
 
@@ -43,7 +38,7 @@ void rainbow(uint8_t wait) {
   uint16_t i, j;
   for(j=0; j<256; j++){
     for(i=0; i<strip.numPixels(); i++)     
-      strip.setPixelColor(i, Wheel((i*1+j) & 255));    
+      strip.setPixelColor(i, wheel((i*1+j) & 255));    
     strip.show();
     delay(wait);
   }
@@ -55,7 +50,7 @@ void setSlidersLevel(){
 }
 
 void changeColor(){
-  for(int i =0; i < strip.numPixels(); i++)
+  for(uint8_t i =0; i < strip.numPixels(); i++)
     strip.setPixelColor(i,red,green,blue);
   strip.show();
   setSlidersLevel();
@@ -116,24 +111,13 @@ BLYNK_READ(V12){ // humidity
 void setup(){
   Serial.begin(9600);
 
-  unsigned status = bme.begin(i2c_bme_address);
+  if(!bme.begin(i2c_bme_address)) 
+    Serial.println("Could not find a valid BME280 sensor, check wiring, address, sensor ID!");
 
   Blynk.begin(auth, ssid, pass, IPAddress(ip_address[0],ip_address[1],ip_address[2],ip_address[3]), 8080);
 
-  Serial.println(status);
-
   strip.begin();
   strip.show();
-
-   if (!status) {
-        Serial.println("Could not find a valid BME280 sensor, check wiring, address, sensor ID!");
-        Serial.print("SensorID was: 0x"); Serial.println(bme.sensorID(),16);
-        Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
-        Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
-        Serial.print("        ID of 0x60 represents a BME 280.\n");
-        Serial.print("        ID of 0x61 represents a BME 680.\n");
-        //while (1) delay(10);
-    }
 }
 
 void loop(){
